@@ -36,13 +36,20 @@ function faceBlurGUI
         faceDetector = vision.CascadeObjectDetector();
         bbox = step(faceDetector, img);
         
-        % Blur faces
+        % Blur faces with smaller area
         processedImg = img;
         for i = 1:size(bbox, 1)
-            face = img(bbox(i, 2):bbox(i, 2)+bbox(i, 4), bbox(i, 1):bbox(i, 1)+bbox(i, 3), :);
-            blurredFace = imgaussfilt(face, 30); % Adjust the standard deviation as needed
-            processedImg(bbox(i, 2):bbox(i, 2)+bbox(i, 4), bbox(i, 1):bbox(i, 1)+bbox(i, 3), :) = blurredFace;
-
+            % Expand the face region slightly for blurring
+            expansionFactor = 0.2; % You can adjust this value as needed
+            expandedRegion = round(bbox(i, :) + [-expansionFactor*bbox(i, 3), -expansionFactor*bbox(i, 4), expansionFactor*bbox(i, 3)*2, expansionFactor*bbox(i, 4)*2]);
+            
+            % Ensure the expanded region is within image boundaries
+            expandedRegion(1:2) = max(expandedRegion(1:2), [1, 1]);
+            expandedRegion(3:4) = min(expandedRegion(3:4), [size(img, 2), size(img, 1)]);
+            
+            face = img(expandedRegion(2):expandedRegion(2)+expandedRegion(4), expandedRegion(1):expandedRegion(1)+expandedRegion(3), :);
+            blurredFace = imgaussfilt(face, 5); % Adjust the standard deviation as needed
+            processedImg(expandedRegion(2):expandedRegion(2)+expandedRegion(4), expandedRegion(1):expandedRegion(1)+expandedRegion(3), :) = blurredFace;
         end
         
         imshow(processedImg, 'Parent', processedAxes);
